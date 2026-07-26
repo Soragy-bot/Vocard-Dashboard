@@ -1023,7 +1023,8 @@ $(document).ready(function () {
                 }
 
                 if ($target.is("span")) {
-                    if (playlistType == "playlist" || ["link", "share"].includes(player.playlists[options.selectedPlaylistId]?.type)) {
+                    const realPlaylistType = player.playlists[options.selectedPlaylistId]?.type
+                    if (playlistType == "playlist" || realPlaylistType === "link") {
                         return buildContextMenu(e, ["playNow", "playNext", "AddToQueue", "getRecommendation", "getLyrics", "playlistAddTrack", "copyLink"], options)
                     } else {
                         return buildContextMenu(
@@ -1645,7 +1646,7 @@ $(document).ready(function () {
             }
 
             const playlistType = player.playlists[options.selectedPlaylistId]?.type
-            if (playlistType && !["link", "share"].includes(playlistType)) {
+            if (playlistType && playlistType !== "link") {
                 menuItems = ["playNow", "playNext", "AddToQueue", "playlistRemoveTrack", "getRecommendation", "getLyrics", "playlistAddTrack", "copyLink"]
             } else {
                 menuItems = ["playNow", "playNext", "AddToQueue", "getRecommendation", "getLyrics", "playlistAddTrack", "copyLink"]
@@ -1738,7 +1739,7 @@ $(document).ready(function () {
                 <div class="sub-menu" id="select-playlist-sub-menu">`
 
         Object.entries(player.playlists).forEach(([key, value]) => {
-            if (value.type === "playlist") {
+            if (value.type === "playlist" || value.type === "share") {
                 html += `<div class="row" id="context-playlist-add-track${key}" data-id="${key}">
                             <p>${value.name}</p>
                         </div>`
