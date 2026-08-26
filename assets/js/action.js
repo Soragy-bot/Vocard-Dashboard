@@ -1512,7 +1512,7 @@ $(document).ready(function () {
                 var pageId = `lyrics-page-${$("[id^='lyrics-page-']").length}`
                 $(".main-container").append(buildLyricHtml(pageId, { title: track.title }))
 
-                op = { op: "getLyrics", title: track.title, callback: pageId }
+                op = { op: "getLyrics", trackId: options.selectedtrackid, callback: pageId }
                 changePage(pageId, true)
                 break
             case "context-playlist-remove-track":
