@@ -195,6 +195,7 @@ class Bot {
         this.avatar = params.botAvatar;
         this.name = params.botName;
         this.id = params.botId.toString();
+        this.isAdmin = !!params.isAdmin;
     }
 }
 
@@ -215,17 +216,18 @@ const methods = {
 
     initBot: function (player, data) {
         const bot = new Bot(data);
-        if (!player.bots.has(bot.id)) {
-            player.bots.set(bot.id, bot);
-        }
+        player.bots.set(bot.id, bot);
         let selectedBotId = localStorage.getItem("selectedBot");
         if (
             player.selectedBot == null &&
             (selectedBotId == undefined || bot.id == selectedBotId)
         ) {
             player.updateSelectedBot(bot.id);
+        } else if (player.selectedBot && player.selectedBot.id == bot.id) {
+            player.selectedBot = bot;
         }
         player.updateSelectedBotView();
+        player.updateAdminMenu();
     },
 
     initUser: function (player, data) {
@@ -998,7 +1000,59 @@ const methods = {
     errorMsg: function (player, data) {
         player.tm.showToast(data["level"], data["msg"]);
     },
+
+    getNodes: function (player, data) {
+        player.nodes = data.nodes || [];
+        const $list = $("#nodes-list");
+
+        if (!player.nodes.length) {
+            $list.html(`<p class="node-empty">${localeTexts.nodes.empty}</p>`);
+        } else {
+            $list.html(player.nodes.map((node) => buildNodeCardHtml(node)).join(""));
+        }
+
+        if (data.message) {
+            player.tm.showToast(data.level || "success", data.message);
+        }
+    },
 };
+
+function buildNodeCardHtml(node) {
+    const connected = !!(node.available || node.connected);
+    const stats = node.stats || {};
+    const identifier = escapeHtml(node.identifier);
+    const host = escapeHtml(node.host);
+    const strategy = escapeHtml(node.reconnectStrategy || "");
+
+    return `
+        <div class="node-card" data-id="${identifier}">
+            <div class="node-card-header">
+                <div class="left">
+                    <span class="status-dot ${connected ? "online" : "offline"}"></span>
+                    <h3>${identifier}</h3>
+                </div>
+                <p class="status-text">${connected ? localeTexts.nodes.connected : localeTexts.nodes.disconnected}</p>
+            </div>
+            <div class="node-meta">
+                <p>${host}:${escapeHtml(node.port)}${node.secure ? " · SSL" : ""}</p>
+                <p>${localeTexts.nodes.players}: ${node.playerCount ?? 0}</p>
+                ${connected && node.latency != null ? `<p>${localeTexts.nodes.latency}: ${node.latency}ms</p>` : ""}
+                ${stats.cpu != null ? `<p>CPU: ${stats.cpu}%</p>` : ""}
+                ${stats.ramFree != null ? `<p>RAM: ${formatBytes(stats.ramFree)}</p>` : ""}
+                ${strategy ? `<p>${localeTexts.nodes.strategy}: ${localeTexts.nodes.strategies[strategy] || strategy}</p>` : ""}
+            </div>
+            <div class="node-actions">
+                ${
+                    connected
+                        ? `<div class="node-btn" data-action="disconnect" data-id="${identifier}">${localeTexts.nodes.disconnect}</div>`
+                        : `<div class="node-btn" data-action="connect" data-id="${identifier}">${localeTexts.nodes.connect}</div>`
+                }
+                <div class="node-btn" data-action="edit" data-id="${identifier}">${localeTexts.nodes.edit}</div>
+                <div class="node-btn danger" data-action="remove" data-id="${identifier}">${localeTexts.nodes.remove}</div>
+            </div>
+        </div>
+    `;
+}
 
 class Player {
     constructor() {
@@ -1038,6 +1092,7 @@ class Player {
 
         this.currentSettings = {};
         this.modifySettings = {};
+        this.nodes = [];
 
         this.filters = [];
         this.availableFilters = [];
@@ -1152,6 +1207,16 @@ class Player {
             }
         }
         this.updateSelectedBotView();
+        this.updateAdminMenu();
+    }
+
+    updateAdminMenu() {
+        const isAdmin = !!this.selectedBot?.isAdmin;
+        const $btn = $("#menu-nodes-page");
+        $btn.css("display", isAdmin ? "flex" : "none");
+        if (!isAdmin && $("#nodes-page").is(":visible")) {
+            changePage("main-page");
+        }
     }
 
     updateSelectedBotView() {

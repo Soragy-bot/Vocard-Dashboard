@@ -216,6 +216,42 @@
                     removeTrack: "{{ _('Remove track') }}",
                     addToPlaylist: "{{ _('Add to playlist') }}",
                 },
+                nodes: {
+                    title: "{{ _('Nodes') }}",
+                    description: "{{ _('Add, edit and reconnect Lavalink nodes for this bot.') }}",
+                    add: "{{ _('Add Node') }}",
+                    edit: "{{ _('Edit') }}",
+                    remove: "{{ _('Remove') }}",
+                    connect: "{{ _('Connect') }}",
+                    disconnect: "{{ _('Disconnect') }}",
+                    connected: "{{ _('Connected') }}",
+                    disconnected: "{{ _('Disconnected') }}",
+                    players: "{{ _('Players') }}",
+                    latency: "{{ _('Latency') }}",
+                    empty: "{{ _('No nodes are configured yet.') }}",
+                    notAdmin: "{{ _('You are not allowed to manage nodes.') }}",
+                    host: "{{ _('Host') }}",
+                    port: "{{ _('Port') }}",
+                    password: "{{ _('Password') }}",
+                    passwordKeep: "{{ _('Leave empty to keep the current password') }}",
+                    secure: "{{ _('Secure') }}",
+                    identifier: "{{ _('Identifier') }}",
+                    strategy: "{{ _('Reconnect strategy') }}",
+                    addTitle: "{{ _('Add Node') }}",
+                    addDescription: "{{ _('Connect a new Lavalink server. Settings are saved to the bot config.') }}",
+                    editTitle: "{{ _('Edit Node') }}",
+                    editDescription: "{{ _('Update this node. Players are moved to another node when the address changes.') }}",
+                    removeTitle: "{{ _('Remove Node') }}",
+                    removeDescription: "{{ _('This node will be removed from the bot. Players will be moved if another node is available.') }}",
+                    yes: "{{ _('Yes') }}",
+                    no: "{{ _('No') }}",
+                    strategies: {
+                        TryOnce: "{{ _('Try once') }}",
+                        RetryOnStartup: "{{ _('Retry on startup') }}",
+                        ReconnectOnDrop: "{{ _('Reconnect on drop') }}",
+                        Always: "{{ _('Always') }}",
+                    },
+                },
             }
         </script>
 
@@ -358,6 +394,26 @@
                                 </div>
                             </div>
                             {% endfor %}
+                        </div>
+                    </div>
+                    {% include "footer.html" %}
+                </div>
+                <div class="sections" id="nodes-page" style="display: none">
+                    <div class="section">
+                        <div class="header nodes-header">
+                            <div class="sub-title">
+                                <p>{{ _("Add, edit and reconnect Lavalink nodes for this bot.") }}</p>
+                                <h2>{{ _("Nodes") }}</h2>
+                            </div>
+                            <div class="reload-btn" id="add-node-btn">
+                                <span class="material-symbols-outlined">add</span>
+                                <p>{{ _("Add Node") }}</p>
+                            </div>
+                        </div>
+                        <div class="node-cards" id="nodes-list">
+                            <div class="center">
+                                <div class="loader"></div>
+                            </div>
                         </div>
                     </div>
                     {% include "footer.html" %}

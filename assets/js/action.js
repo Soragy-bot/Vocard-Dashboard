@@ -429,7 +429,7 @@ function buildModalHtml(data) {
             case "text":
                 sectionHtml = `
                     <p class="title">${fieldData.title}</p>
-                        <input type="text" placeholder="${fieldData.placeholder}" data-id="field-${key}" maxlength="${fieldData.maxLength}">
+                        <input type="text" placeholder="${fieldData.placeholder}" data-id="field-${key}" maxlength="${fieldData.maxLength}" value="${fieldData.default ?? ""}">
                     <p class="error-msg"></p>
                 `
                 break
@@ -466,7 +466,7 @@ function buildModalHtml(data) {
         .join("")
 
     // Return the complete modal HTML
-    const dataOptions = Object.entries(data?.dataOptions)
+    const dataOptions = Object.entries(data?.dataOptions || {})
         .map(([key, value]) => `data-${key}="${value}"`)
         .join(" ")
 
@@ -825,6 +825,10 @@ $(document).ready(function () {
                     return buildExplorePage()
                 }
 
+                if (pageName == "nodes-page") {
+                    return buildNodesPage()
+                }
+
                 if (pageName == "create-playlist") {
                     if (player.selectedBot == undefined) {
                         return player.tm.showToast("error", localeTexts.errors.noPlayerError)
@@ -901,6 +905,52 @@ $(document).ready(function () {
 
                 if (playlist.tracks == undefined) {
                     player.send({ op: "getPlaylist", playlistId: dataId })
+                }
+            }
+            return
+        }
+
+        if ($target.closest("#nodes-page").length) {
+            if ($target.closest("#add-node-btn").length) {
+                return $("html").append(buildNodeFormModal("addNode"))
+            }
+
+            const $nodeBtn = $target.closest(".node-btn")
+            if ($nodeBtn.length) {
+                const action = $nodeBtn.data("action")
+                const identifier = $nodeBtn.data("id")
+                const node = (player.nodes || []).find((item) => item.identifier === identifier)
+
+                if (action === "connect") {
+                    return player.send({ op: "connectNode", identifier })
+                }
+                if (action === "disconnect") {
+                    return player.send({ op: "disconnectNode", identifier })
+                }
+                if (action === "edit") {
+                    if (!node) return
+                    return $("html").append(buildNodeFormModal("updateNode", node))
+                }
+                if (action === "remove") {
+                    return $("html").append(
+                        buildModalHtml({
+                            type: "removeNode",
+                            color: "red",
+                            dataOptions: { identifier },
+                            header: {
+                                icon: "delete",
+                                title: localeTexts.nodes.removeTitle,
+                                description: localeTexts.nodes.removeDescription,
+                            },
+                            fields: {},
+                            footer: {
+                                submit: {
+                                    text: localeTexts.nodes.remove,
+                                    color: "red",
+                                },
+                            },
+                        })
+                    )
                 }
             }
             return
@@ -1360,6 +1410,38 @@ $(document).ready(function () {
                                 playlistId: playlistId,
                             })
                         )
+
+                    case "addNode":
+                        player.send({
+                            op: "addNode",
+                            identifier: result.identifier,
+                            host: result.host,
+                            port: result.port,
+                            password: result.password,
+                            secure: result.secure,
+                            reconnectStrategy: result.reconnectStrategy,
+                        })
+                        return closeAllModals()
+
+                    case "updateNode":
+                        player.send({
+                            op: "updateNode",
+                            oldIdentifier: $modal.data("oldIdentifier"),
+                            identifier: result.identifier,
+                            host: result.host,
+                            port: result.port,
+                            password: result.password,
+                            secure: result.secure,
+                            reconnectStrategy: result.reconnectStrategy,
+                        })
+                        return closeAllModals()
+
+                    case "removeNode":
+                        player.send({
+                            op: "removeNode",
+                            identifier: $modal.data("identifier"),
+                        })
+                        return closeAllModals()
                 }
             }
             return
@@ -1893,6 +1975,95 @@ $(document).ready(function () {
             </div>`)
         player.send({ op: "getMutualGuilds" })
         changePage("settings-page", true)
+    }
+
+    function nodeStrategyOptions() {
+        return {
+            TryOnce: { title: localeTexts.nodes.strategies.TryOnce, triggerClass: [] },
+            RetryOnStartup: { title: localeTexts.nodes.strategies.RetryOnStartup, triggerClass: [] },
+            ReconnectOnDrop: { title: localeTexts.nodes.strategies.ReconnectOnDrop, triggerClass: [] },
+            Always: { title: localeTexts.nodes.strategies.Always, triggerClass: [] },
+        }
+    }
+
+    function buildNodeFormModal(type, node = {}) {
+        const isEdit = type === "updateNode"
+        return buildModalHtml({
+            type: type,
+            color: "",
+            dataOptions: isEdit ? { "old-identifier": node.identifier } : {},
+            header: {
+                icon: "hub",
+                title: isEdit ? localeTexts.nodes.editTitle : localeTexts.nodes.addTitle,
+                description: isEdit ? localeTexts.nodes.editDescription : localeTexts.nodes.addDescription,
+            },
+            fields: {
+                identifier: {
+                    title: localeTexts.nodes.identifier,
+                    placeholder: "DEFAULT",
+                    default: node.identifier || "",
+                    inputType: "text",
+                    maxLength: 32,
+                    disable: false,
+                },
+                host: {
+                    title: localeTexts.nodes.host,
+                    placeholder: "127.0.0.1",
+                    default: node.host || "",
+                    inputType: "text",
+                    maxLength: 255,
+                    disable: false,
+                },
+                port: {
+                    title: localeTexts.nodes.port,
+                    placeholder: "2333",
+                    default: node.port != null ? String(node.port) : "",
+                    inputType: "text",
+                    maxLength: 5,
+                    disable: false,
+                },
+                password: {
+                    title: localeTexts.nodes.password,
+                    placeholder: isEdit ? localeTexts.nodes.passwordKeep : "youshallnotpass",
+                    default: "",
+                    inputType: "text",
+                    maxLength: 100,
+                    disable: false,
+                },
+                secure: {
+                    title: localeTexts.nodes.secure,
+                    default: node.secure ? "true" : "false",
+                    options: {
+                        false: { title: localeTexts.nodes.no, triggerClass: [] },
+                        true: { title: localeTexts.nodes.yes, triggerClass: [] },
+                    },
+                    inputType: "dropdown",
+                    disable: false,
+                },
+                reconnectStrategy: {
+                    title: localeTexts.nodes.strategy,
+                    default: node.reconnectStrategy || "ReconnectOnDrop",
+                    options: nodeStrategyOptions(),
+                    inputType: "dropdown",
+                    disable: false,
+                },
+            },
+            footer: {
+                submit: {
+                    text: isEdit ? localeTexts.confirm : localeTexts.nodes.add,
+                    color: "",
+                },
+            },
+        })
+    }
+
+    function buildNodesPage() {
+        if (!player.selectedBot?.isAdmin) {
+            return player.tm.showToast("error", localeTexts.nodes.notAdmin)
+        }
+        $("#nodes-list").html('<div class="center"><div class="loader"></div></div>')
+        player.send({ op: "getNodes" })
+        changePage("nodes-page", true, false)
     }
 
     function buildExplorePage() {

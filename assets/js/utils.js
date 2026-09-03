@@ -42,3 +42,20 @@ function capitalize(string) {
 function formatString(str, ...args) {
     return str.replace(/{(\d+)}/g, (match, number) => typeof args[number] !== 'undefined' ? args[number] : match);
 };
+
+function formatBytes(bytes) {
+    if (bytes == null || Number.isNaN(Number(bytes))) return "—";
+    const value = Number(bytes);
+    if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(1)} GB`;
+    return `${(value / 1_000_000).toFixed(1)} MB`;
+}
+
+function escapeHtml(value) {
+    return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+    }[char]));
+}
